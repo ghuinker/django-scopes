@@ -64,7 +64,7 @@ class DisabledQuerySet(models.QuerySet):
     values_list = error
 
 
-def ScopedManager(_manager_class=models.Manager, **scopes):
+def ScopedManager(_manager_class=models.Manager, ignore_missing_scopes=False, **scopes):
     required_scopes = set(scopes.keys())
 
     class Manager(_manager_class):
@@ -76,11 +76,13 @@ def ScopedManager(_manager_class=models.Manager, **scopes):
             if not current_scope.get('_enabled', True):
                 return super().get_queryset()
             missing_scopes = required_scopes - set(current_scope.keys())
-            if missing_scopes:
+            if missing_scopes and not ignore_missing_scopes:
                 return DisabledQuerySet(self.model, using=self._db, missing_scopes=missing_scopes)
             else:
                 filter_kwargs = {}
                 for dimension in required_scopes:
+                    if dimension not in current_scope:
+                        continue
                     current_value = current_scope[dimension]
                     if isinstance(current_value, (list, tuple)):
                         filter_kwargs[scopes[dimension] + '__in'] = current_value

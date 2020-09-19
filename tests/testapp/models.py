@@ -35,3 +35,8 @@ class Bookmark(models.Model):
     userid = models.IntegerField()
 
     objects = ScopedManager(site='post__site', user_id='userid')
+
+class Like(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+
+    objects = ScopedManager(site='post__site', ignore_missing_scopes=True)

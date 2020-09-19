@@ -3,7 +3,7 @@ from django.db.models import IntegerField, Value
 
 from django_scopes import ScopeError, get_scope, scope, scopes_disabled
 
-from .testapp.models import Bookmark, Comment, Post, Site
+from .testapp.models import Like, Bookmark, Comment, Post, Site
 
 
 @pytest.fixture
@@ -221,3 +221,33 @@ def test_multiple_dimensions(site1, site2, bm2_1, bm1_1, bm1_2):
 
     with scope(site=site1, user_id=1):
         assert list(Bookmark.objects.all()) == [bm1_1]
+
+@pytest.fixture
+def like1_1(post1):
+    return Like.objects.create(post=post1)
+
+@pytest.fixture
+def like1_2(post1):
+    return Like.objects.create(post=post1)
+
+@pytest.fixture
+def like2_1(post2):
+    return Like.objects.create(post=post2)
+
+@pytest.mark.django_db
+def test_ignore_missing_scopes(site1, site2, like1_1, like1_2, like2_1):
+    """Test manager ignore_missing_scopes functionality"""
+    # No error is raised
+    try:
+        Like.objects.all()
+    except ScopeError:
+        pytest.fail()
+    # filter scopes persists
+    with scope(site=site1):
+        assert list(Like.objects.all()) == [like1_1, like1_2]
+    with scope(site=site2):
+        assert list(Like.objects.all()) == [like2_1]
+    # return all if no filters
+    assert list(Like.objects.all()) == [like1_1, like1_2, like2_1]
+
+
